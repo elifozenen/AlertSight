@@ -1,0 +1,13 @@
+# Yolov5 ve geçici dosyalar
+yolov5/
+__pycache__/
+*.pyc
+*.pkl
+*.mp4
+*.jpg
+*.png
+
+# Flask/Streamlit upload ve sonuç klasörleri
+/static/uploads/
+/static/results/
+/static/snapshots/

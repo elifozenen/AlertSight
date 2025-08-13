@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sonuç</title>
+  <style>
+    body {
+        font-family: Arial;
+        background: #000;
+        color: #fff;
+        text-align: center;
+    }
+    video, img {
+        border: 3px solid #444;
+        margin-top: 20px;
+        max-width: 90vw;
+    }
+    h1, h2, h3 {
+        margin-top: 20px;
+    }
+    a {
+        display: inline-block;
+        margin-top: 30px;
+        color: #0af;
+        font-weight: bold;
+    }
+    #logo-container {
+        text-align: center;
+        margin: 20px 0;
+    }
+    #logo-container img {
+        height: 120px;
+    }
+    #danger-times button {
+        margin: 5px;
+        padding: 8px 12px;
+        background-color: #c00;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    #danger-times button:hover {
+        background-color: #f33;
+    }
+    /* Gör butonları bordo renk */
+    .snapshot-btn {
+        background-color: #800000;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+        margin-left: 10px;
+        padding: 8px 12px;
+    }
+    .snapshot-btn:hover {
+        background-color: #a00000;
+    }
+    #snapshotModal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0; top: 0;
+        width: 100%; height: 100%;
+        background-color: rgba(0,0,0,0.8);
+        align-items: center;
+        justify-content: center;
+    }
+    #snapshotModal img {
+        max-width: 80vw;
+        max-height: 80vh;
+        border: 4px solid #fff;
+        border-radius: 10px;
+    }
+    #snapshotModal span {
+        position: absolute;
+        top: 20px;
+        right: 30px;
+        color: #fff;
+        font-size: 30px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    /* Tehlike durumu kutusu */
+    .status-box {
+      display: inline-block;
+      padding: 15px 30px;
+      border-radius: 12px;
+      font-size: 24px;
+      font-weight: bold;
+      margin-top: 20px;
+      color: white;
+      min-width: 300px;
+    }
+    .danger {
+      background-color: #c00; /* kırmızı */
+      border: 2px solid #900;
+    }
+    .safe {
+      background-color: #0a0; /* yeşil */
+      border: 2px solid #060;
+    }
+    /* Konum kutusu ve harita */
+    #location {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      background-color: rgba(255,255,255,0.9);
+      color: #6c2112; /* bordo */
+      font-weight: bold;
+      padding: 10px 15px;
+      border-radius: 12px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.5);
+      max-width: 320px;
+      z-index: 1000;
+      text-align: left;
+      font-size: 18px;
+    }
+    #map {
+      margin-top: 10px;
+      width: 300px;
+      height: 200px;
+      border-radius: 12px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.5);
+    }
+
+    /* Tarih-Saat kutusu - sol üst köşe, #d19b92 renginde */
+    #detectionTimeBox {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background-color: rgba(209, 155, 146, 0.85); /* #d19b92 şeffaf */
+      color: #fff;
+      font-weight: bold;
+      padding: 15px 25px;
+      border-radius: 12px;
+      font-size: 18px;
+      box-shadow: 0 0 12px rgba(209, 155, 146, 0.7);
+      z-index: 1100;
+      min-width: 220px;
+      text-align: center;
+      user-select: none;
+      letter-spacing: 1px;
+      backdrop-filter: blur(6px);
+    }
+  </style>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+</head>
+<body>
+
+  <div id="logo-container">
+      <img src="{{ url_for('static', filename='icons/logo.png') }}" alt="Site Logosu" />
+  </div>
+
+  <h1>Tehlike Durumu</h1>
+
+  {% if danger %}
+    <div class="status-box danger">
+      UYARI: Tehlikeli Nesne Tespit Edildi! - Telegrama Gönderildi
+    </div>
+  {% else %}
+    <div class="status-box safe">
+      Güvenli - Tehlikeli Nesne Tespit Edilmedi
+    </div>
+  {% endif %}
+
+  <h3>Tehlike Tespit Edilen Anlar</h3>
+  <div id="danger-times">
+    {% if danger_snapshots and danger_snapshots|length > 0 %}
+        {% for t, snap_url in danger_snapshots %}
+            <div style="margin-bottom: 10px;">
+                <button onclick="jumpToTime('{{ t }}')">{{ t }}. saniye</button>
+                <button class="snapshot-btn" onclick="showSnapshot('{{ snap_url }}')">📷 Gör</button>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>Tehlikeli nesne tespit edilmedi.</p>
+    {% endif %}
+  </div>
+
+  <br/>
+  <a href="{{ url_for('index') }}">Geri Dön</a>
+
+  <div id="snapshotModal" onclick="closeSnapshot()">
+    <span>&times;</span>
+    <img id="snapshotImg" src="" alt="Snapshot Görüntü" />
+  </div>
+
+  <!-- Konum ve harita kutusu -->
+  <div id="location">
+    Konumunuz: <span id="locationText">Alınamıyor...</span>
+    <div id="map"></div>
+  </div>
+
+  <!-- Tarih-Saat kutusu -->
+  {% if detection_time %}
+    <div id="detectionTimeBox">
+      Son Tespit: {{ detection_time }}
+    </div>
+  {% endif %}
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <script>
+    // Video zaman atlama fonksiyonu
+    function jumpToTime(seconds) {
+        const video = document.getElementById("resultVideo");
+        if(video){
+          video.currentTime = Number(seconds);
+          video.play();
+        }
+    }
+
+    // Snapshot gösterme modal fonksiyonu
+    function showSnapshot(src) {
+        const modal = document.getElementById("snapshotModal");
+        const img = document.getElementById("snapshotImg");
+        img.src = src;
+        modal.style.display = "flex";
+    }
+
+    // Modal kapatma fonksiyonu
+    function closeSnapshot() {
+        const modal = document.getElementById("snapshotModal");
+        modal.style.display = "none";
+        const img = document.getElementById("snapshotImg");
+        img.src = "";
+    }
+    document.getElementById("snapshotModal").querySelector("span").onclick = function(e) {
+        e.stopPropagation();
+        closeSnapshot();
+    };
+
+    // Harita ve marker değişkenleri
+    let map, marker;
+
+    // Harita başlatma fonksiyonu
+    function initMap(lat, lon) {
+      if (!map) {
+        map = L.map('map').setView([lat, lon], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        marker = L.marker([lat, lon]).addTo(map)
+          .bindPopup('Buradasınız.')
+          .openPopup();
+      } else {
+        map.setView([lat, lon], 13);
+        marker.setLatLng([lat, lon]);
+      }
+    }
+
+    // Konum bilgisini göster ve haritayı güncelle
+    function showPosition(position) {
+      const lat = position.coords.latitude;
+      const lon = position.coords.longitude;
+
+      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
+        .then(response => response.json())
+        .then(data => {
+          if (data && data.address) {
+            const { city, town, village, state, country } = data.address;
+            const locationName = city || town || village || state || country || "Bilinmeyen Konum";
+            document.getElementById("locationText").textContent = locationName;
+          } else {
+            document.getElementById("locationText").textContent = "Konum bulunamadı";
+          }
+        })
+        .catch(() => {
+          document.getElementById("locationText").textContent = "Konum alınamadı";
+        });
+
+      initMap(lat, lon);
+    }
+
+    // Konum hatası mesajı
+    function showError(error) {
+      let msg = "";
+      switch(error.code) {
+        case error.PERMISSION_DENIED:
+          msg = "Konum izni reddedildi.";
+          break;
+        case error.POSITION_UNAVAILABLE:
+          msg = "Konum bilgisi alınamıyor.";
+          break;
+        case error.TIMEOUT:
+          msg = "Konum isteği zaman aşımına uğradı.";
+          break;
+        default:
+          msg = "Bilinmeyen bir hata oluştu.";
+      }
+      document.getElementById("locationText").textContent = msg;
+    }
+
+    // Sayfa yüklendiğinde konum iste
+    window.onload = function() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(showPosition, showError);
+      } else {
+        document.getElementById("locationText").textContent = "Tarayıcı konum desteklemiyor";
+      }
+    }
+  </script>
+
+</body>
+</html>

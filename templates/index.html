@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <title>Tehlikeli Nesne Tespiti</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #111; 
+            color: #fff; 
+            margin: 0; 
+            display: flex; 
+            height: 100vh; 
+        }
+        /* Sol panel: admin login */
+        #admin-panel {
+            width: 300px;
+            background-color: #4b0000; /* Bordo */
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        #admin-panel h2 {
+            margin-bottom: 20px;
+        }
+        #admin-panel input {
+            width: 90%;
+            padding: 10px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 6px;
+        }
+        #admin-panel input[type="text"], #admin-panel input[type="password"] {
+            background-color: #fff;
+            color: #000;
+        }
+        #admin-panel button {
+            background-color: #d19b92;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            width: 100%;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        #admin-panel button:hover {
+            background-color: #b17e74;
+        }
+
+        /* Sağ panel: kullanıcı video yükleme */
+        #user-panel {
+            flex: 1;
+            padding: 40px;
+            box-sizing: border-box;
+            text-align: center;
+            position: relative;
+        }
+        #alert {
+            position: fixed; 
+            top: 20px; 
+            right: 20px;
+            padding: 15px; 
+            border-radius: 10px; 
+            font-size: 18px;
+            transition: background 0.3s;
+            z-index: 1000;
+        }
+        .safe { background: green; }
+        .danger { background: red; color: yellow; font-weight: bold; }
+        form {
+            margin-top: 30px;
+            margin-bottom: 30px;
+        }
+        input[type="file"] {
+            color: pink;
+        }
+        button.upload-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        /* Logo container */
+        #logo-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        #logo-container img {
+            height: 60px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sol: Admin login -->
+    <div id="admin-panel">
+        <h2>Admin Girişi</h2>
+        <form id="adminLoginForm" action="/login" method="post">
+            <input type="text" name="username" placeholder="Kullanıcı Adı" required>
+            <input type="password" name="password" placeholder="Şifre" required>
+            <button type="submit">Giriş Yap</button>
+        </form>
+    </div>
+
+    <!-- Sağ: Kullanıcı video yükleme -->
+    <div id="user-panel">
+        <!-- Logo -->
+        <div id="logo-container">
+            <img src="{{ url_for('static', filename='icons/logo.png') }}" alt="Site Logosu" />
+        </div>
+
+        <h1>Tehlikeli Nesne Tespiti</h1>
+        <div id="alert" class="safe">Güvenli - Tehlikeli Nesne Yok</div>
+
+        <!-- Video Yükleme Formu -->
+        <form id="uploadForm" action="/predict" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" accept="video/*" required />
+            <!-- Gizli inputlar -->
+            <input type="hidden" id="latitude" name="latitude" />
+            <input type="hidden" id="longitude" name="longitude" />
+            <button type="submit" class="upload-btn">Videoyu Yükle ve İşle</button>
+        </form>
+    </div>
+
+    <script>
+        // Konumu al ve formdaki gizli inputlara yerleştir
+        function setLocation(position) {
+            document.getElementById('latitude').value = position.coords.latitude;
+            document.getElementById('longitude').value = position.coords.longitude;
+        }
+
+        function locationError(err) {
+            console.warn(`Konum alınamadı: ${err.message}`);
+        }
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(setLocation, locationError);
+        } else {
+            console.warn('Tarayıcı konum desteği yok');
+        }
+
+        // Durum güncelleme (uyarı)
+        setInterval(() => {
+            fetch("/status")
+                .then(res => res.json())
+                .then(data => {
+                    const alertDiv = document.getElementById("alert");
+                    if(data.danger) {
+                        alertDiv.textContent = "UYARI: Tehlikeli Nesne Tespit Edildi!";
+                        alertDiv.className = "danger";
+                    } else {
+                        alertDiv.textContent = "Güvenli - Tehlikeli Nesne Yok";
+                        alertDiv.className = "safe";
+                    }
+                });
+        }, 1000);
+    </script>
+</body>
+</html>

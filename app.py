@@ -155,7 +155,7 @@ def predict():
                     y_start = max(y1 - h, 0)
                     y_end = y_start + h
                     x_start = x1
-                    x_end = x_start + w
+                    x_end = x1 + w
                     if y_end <= annotated_frame.shape[0] and x_end <= annotated_frame.shape[1]:
                         annotated_frame[y_start:y_end, x_start:x_end] = icon_resized
 
@@ -244,4 +244,5 @@ def status():
     return jsonify({"danger": danger_state})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)

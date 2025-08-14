@@ -11,13 +11,14 @@ from functools import wraps
 app = Flask(__name__, template_folder='templates')
 app.secret_key = "super_secret_key_123"
 
-# Kullanıcı bilgileri
-USERNAME = "elifozenen"
-PASSWORD = "190684mariposa"
+# Kullanıcı bilgileri (Render environment variables ile alınıyor)
+USERNAME = os.environ.get("ADMIN_USERNAME")
+PASSWORD = os.environ.get("ADMIN_PASSWORD")
 
 # Kayıt dosyası
 DATA_FILE = "data.json"
 
+# YOLO modeli
 model = YOLO('runs/detect/train/weights/best.pt')
 
 UPLOAD_FOLDER = 'static/uploads'
@@ -31,8 +32,9 @@ os.makedirs(SNAPSHOT_FOLDER, exist_ok=True)
 
 danger_state = False
 
-TELEGRAM_BOT_TOKEN = '8275949193:AAFEQy80YMh0i9y6Ka4mErGYAwY26SsuzBc'
-TELEGRAM_CHAT_ID = '5720664811'
+# Telegram bilgileri (Render environment variables ile alınıyor)
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
 # Telegram gönderim fonksiyonu
 def send_telegram_message(message):
@@ -153,7 +155,7 @@ def predict():
                     y_start = max(y1 - h, 0)
                     y_end = y_start + h
                     x_start = x1
-                    x_end = x1 + w
+                    x_end = x_start + w
                     if y_end <= annotated_frame.shape[0] and x_end <= annotated_frame.shape[1]:
                         annotated_frame[y_start:y_end, x_start:x_end] = icon_resized
 
